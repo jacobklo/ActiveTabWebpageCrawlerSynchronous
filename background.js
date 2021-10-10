@@ -1,15 +1,14 @@
-var Cur_id = ''
-var Cur_html = ''
+var Cur_id = Number.MIN_SAFE_INTEGER;
+var All_HTMLs = {};
 // output to allProcessedData
 var AllProcessedData = {};
-
 // ajaxRequestData is what you pass to the url: http://example.com?r=1
-var UrlsToLoad = ['https://www.yahoo.com', 'https://www.yahoo.com.hk'];
+var UrlsToLoad = ['https://my.headspace.com/player/16?startIndex=0'];
 
 
 // Create new Page, for data to load on it
 var NewPage = browser.tabs.create({
-  url: 'https://www.yahoo.com'
+  url: 'https://my.headspace.com'
   , active: true
 });
 NewPage.then(onNewPageCreated, onError);
@@ -26,12 +25,37 @@ function onError(error) {
 
 
 // Handle the HTML from the new tab
-function handleMessage(request) {
-  Cur_html = request.html;
-  console.log(Cur_id, Cur_html);
+function handleNewPageHTML(request) {
+  All_HTMLs[request.url] = request.html;
+  console.log('Cur_html');
 }
+browser.runtime.onMessage.addListener(handleNewPageHTML);
 
-browser.runtime.onMessage.addListener(handleMessage);
+
+
+// Once the webpage get m3u8 file, save the m3u8 file link into AllProcessedData
+browser.webRequest.onResponseStarted.addListener(
+  async (response_details) => {
+    if (response_details.tabId != Cur_id) {
+      console.log("ERROR", response_details.tabId);
+      return;
+    }
+    
+    AllProcessedData[response_details.originUrl] = response_details.url;
+    console.log(response_details);
+  },
+  {
+    types: ["xmlhttprequest"],
+    urls: [
+      "http://*/*.m3u8",
+      "https://*/*.m3u8",
+      //"http://*/*.m3u8?*",
+      //"https://*/*.m3u8?*",
+    ],
+  }
+);
+
+
 
 
 // Recursively call one by one on each URL and load its data
@@ -44,14 +68,6 @@ var promiseRecursive = (urlsToLoad, index) => {
       url: urlsToLoad[index]
     });
     page.then(() => {
-      // Inject a listener to send html code back to here
-      browser.tabs.executeScript(Cur_id, {
-        code: `document.body.style.border = "5px solid red";
-           var sending = browser.runtime.sendMessage({
-             html: document.documentElement.innerHTML
-           });`
-      });
-
       promiseRecursive(urlsToLoad, index + 1);
     })
     // $.ajax({
@@ -70,36 +86,6 @@ var promiseRecursive = (urlsToLoad, index) => {
 promiseRecursive(UrlsToLoad, 0);
 
 /*
-
-browser.webRequest.onResponseStarted.addListener(
-  async (details) => {
-    if (details.tabId < 0) {
-      return;
-    }
-    const tab = await browser.tabs.get(details.tabId);
-
-    
-  },
-  {
-    types: ["xmlhttprequest"],
-    urls: [
-      //"http://* /*.m3u8",
-      //"https://* /*.m3u8",
-      //"http://* /*.m3u8?*",
-      //"https://* /*.m3u8?*",
-    ],
-  }
-);
-
-
-
-
-
-
-
-
-
-
 
 
 
