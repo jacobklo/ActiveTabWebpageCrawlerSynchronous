@@ -1,3 +1,76 @@
+var Cur_id = ''
+var Cur_html = ''
+// output to allProcessedData
+var AllProcessedData = {};
+
+// ajaxRequestData is what you pass to the url: http://example.com?r=1
+var UrlsToLoad = ['https://www.yahoo.com', 'https://www.yahoo.com.hk'];
+
+
+// Create new Page, for data to load on it
+var NewPage = browser.tabs.create({
+  url: 'https://www.yahoo.com'
+  , active: true
+});
+NewPage.then(onNewPageCreated, onError);
+
+function onNewPageCreated(tab) {
+  console.log(`Created new tab: ${tab.id}`);
+  Cur_id = tab.id;
+}
+
+function onError(error) {
+  console.log(`Error: ${error}`);
+}
+
+
+
+// Handle the HTML from the new tab
+function handleMessage(request) {
+  Cur_html = request.html;
+  console.log(Cur_id, Cur_html);
+}
+
+browser.runtime.onMessage.addListener(handleMessage);
+
+
+// Recursively call one by one on each URL and load its data
+var promiseRecursive = (urlsToLoad, index) => {
+  if (index >= urlsToLoad.length) {
+    return;
+  }
+  setTimeout(() => {
+    var page = browser.tabs.update(Cur_id, {
+      url: urlsToLoad[index]
+    });
+    page.then(() => {
+      // Inject a listener to send html code back to here
+      browser.tabs.executeScript(Cur_id, {
+        code: `document.body.style.border = "5px solid red";
+           var sending = browser.runtime.sendMessage({
+             html: document.documentElement.innerHTML
+           });`
+      });
+
+      promiseRecursive(urlsToLoad, index + 1);
+    })
+    // $.ajax({
+    //   url: finvizURL
+    //   , data: ajaxRequestData[index]
+    //   , success: (response) => {
+    //     getFinvizTable(response, index);
+    //     promiseRecursive(index + 1);
+    //   }
+    // });
+  }, 10000);
+}
+
+
+// Call this to run:
+promiseRecursive(UrlsToLoad, 0);
+
+/*
+
 browser.webRequest.onResponseStarted.addListener(
   async (details) => {
     if (details.tabId < 0) {
@@ -5,29 +78,30 @@ browser.webRequest.onResponseStarted.addListener(
     }
     const tab = await browser.tabs.get(details.tabId);
 
-    console.log(details)
-    console.log(tab)
+    
   },
   {
     types: ["xmlhttprequest"],
     urls: [
-      "http://*/*.m3u8",
-      "https://*/*.m3u8",
-      //"http://*/*.m3u8?*",
-      //"https://*/*.m3u8?*",
+      //"http://* /*.m3u8",
+      //"https://* /*.m3u8",
+      //"http://* /*.m3u8?*",
+      //"https://* /*.m3u8?*",
     ],
   }
 );
 
-// output to allProcessedData
-var allProcessedData = {};
 
-// ajaxRequestData is what you pass to the url: http://example.com?r=1
-var ajaxRequestData = [];
-for (let k = 1; k < 3; k += 20) {
-  ajaxRequestData.push({ "r": k });
-}
-const finvizURL = 'https://finviz.com/screener.ashx?v=111&f=idx_sp500&ft=4&o=-marketcap&';
+
+
+
+
+
+
+
+
+
+
 
 var getFinvizTable = (html, index) => {
   console.log('Page done : ', index);
@@ -51,23 +125,4 @@ var getFinvizTable = (html, index) => {
 };
 
 
-// For each data in ajaxRequestData, we will get the html webpage code, and call helper function()
-// Each ajax request is waited, and only go to next ajax request if this succeed.
-var promiseRecursive = (index) => {
-  if (index >= ajaxRequestData.length) {
-    return;
-  }
-  setTimeout(() => {
-    $.ajax({
-      url: finvizURL
-      , data: ajaxRequestData[index]
-      , success: (response) => {
-        getFinvizTable(response, index);
-        promiseRecursive(index + 1);
-      }
-    });
-  }, 10000);
-}
-
-// This is how to start stock crawler
-promiseRecursive(0)
+*/

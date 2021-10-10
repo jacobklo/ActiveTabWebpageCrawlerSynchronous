@@ -24,11 +24,13 @@
     "assets/**/*"
   ],
   "permissions": [
+    "<all_urls>",
     "webRequest",
     "unlimitedStorage",
     "storage",
     "downloads",
     "tabs",
+    "activeTab",
     "http://*/*",
     "https://*/*"
   ]
