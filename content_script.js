@@ -5,7 +5,7 @@ setTimeout(() => {
     url: document.URL
     , html: document.documentElement.innerHTML
   });
-}, 5000);
+}, 13000);
 
 
 

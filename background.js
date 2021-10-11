@@ -1,9 +1,9 @@
 var Cur_id = Number.MIN_SAFE_INTEGER;
+var Current_index = 0;
 var All_HTMLs = {};
 // output to allProcessedData
 var AllProcessedData = {};
 // ajaxRequestData is what you pass to the url: http://example.com?r=1
-var UrlsToLoad = ['https://my.headspace.com/player/16?startIndex=0'];
 
 
 // Create new Page, for data to load on it
@@ -26,7 +26,7 @@ function onError(error) {
 
 // Handle the HTML from the new tab
 function handleNewPageHTML(request) {
-  All_HTMLs[request.url] = request.html;
+  //All_HTMLs[request.url] = request.html;
   console.log('Cur_html');
 }
 browser.runtime.onMessage.addListener(handleNewPageHTML);
@@ -43,6 +43,8 @@ browser.webRequest.onResponseStarted.addListener(
     
     AllProcessedData[response_details.originUrl] = response_details.url;
     console.log(response_details);
+
+    Current_index += 1;
   },
   {
     types: ["xmlhttprequest"],
@@ -57,58 +59,23 @@ browser.webRequest.onResponseStarted.addListener(
 
 
 
-
 // Recursively call one by one on each URL and load its data
-var promiseRecursive = (urlsToLoad, index) => {
-  if (index >= urlsToLoad.length) {
+var promiseRecursive = (index) => {
+  if (index >= 10) {
     return;
   }
+  var player = 101;
   setTimeout(() => {
     var page = browser.tabs.update(Cur_id, {
-      url: urlsToLoad[index]
+      url: 'https://my.headspace.com/player/' + player + '?startIndex=' + index
+
     });
     page.then(() => {
-      promiseRecursive(urlsToLoad, index + 1);
+      promiseRecursive(Current_index);
     })
-    // $.ajax({
-    //   url: finvizURL
-    //   , data: ajaxRequestData[index]
-    //   , success: (response) => {
-    //     getFinvizTable(response, index);
-    //     promiseRecursive(index + 1);
-    //   }
-    // });
-  }, 10000);
+  }, 15000);
 }
 
 
 // Call this to run:
-promiseRecursive(UrlsToLoad, 0);
-
-/*
-
-
-
-var getFinvizTable = (html, index) => {
-  console.log('Page done : ', index);
-
-  // Get table items rows:
-  let $tbody = $(html).find('.screener-link-primary:eq(0)').parent().parent().parent();
-  $tbody.find('tr:gt(0)').each((i, row) => {
-    let stockInfo = {};
-
-    $(row).find('td').each((j, col) => {
-
-      // Get table title : No. 	Ticker 	Company 	Sector...
-      let colName = $('tbody:eq(20) td:eq(' + j + ')').text();
-      let colValue = $(col).text();
-      stockInfo[colName] = colValue;
-    });
-
-    allProcessedData[stockInfo["No."]] = stockInfo;
-  })
-
-};
-
-
-*/
+promiseRecursive(0);
