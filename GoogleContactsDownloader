@@ -1,0 +1,50 @@
+// 1) Go to contacts.google.com
+// 2) Copy this code into the Google Chrome Dev Console. 
+// 3) Manually scroll the contact page down til very end. This script will automatically capture newly added rows of contacts
+// 4) Now, copy the 'contacts' variable and paste it in text editor
+
+// This is MutationObserver, it will callback whatever DOM element is changed.
+var observeDOM = (function () {
+  var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+
+  return function (obj, callback) {
+    if (!obj || obj.nodeType !== 1) return;
+
+    if (MutationObserver) {
+      // define a new observer
+      var mutationObserver = new MutationObserver(callback)
+
+      // have the observer observe foo for changes in children
+      mutationObserver.observe(obj, { childList: true, subtree: true })
+      return mutationObserver
+    }
+
+    // browser support fallback
+    else if (window.addEventListener) {
+      obj.addEventListener('DOMNodeInserted', callback, false)
+      obj.addEventListener('DOMNodeRemoved', callback, false)
+    }
+  }
+})()
+
+// The Main table that has all the contacts
+var listdiv = document.querySelectorAll('div[jscontroller="boqzSe"]')[1]
+
+// Contacts variable output
+var contacts = {};
+
+// Subscriber for that Main contact table
+observeDOM(listdiv, function (m) {
+  var rows = m[0].target.querySelectorAll('div.XXcuqd');
+  rows.forEach(r => {
+    var img = r.querySelector('img').src;
+    var name = r.querySelector('div.iMwYAb').textContent;
+    var email = r.querySelector('div.Fnzcme').textContent;
+    var phone = r.querySelector('div.b62A4e').textContent;
+    var title = r.querySelector('div.ZAFZMe').textContent;
+    var labels = r.querySelector('div.OxwIJc').textContent;
+    
+    var contact = {name, email, phone, title, labels, img};
+    contacts[name] = contact;
+  });
+});
